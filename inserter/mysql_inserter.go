@@ -2,12 +2,15 @@ package main
 
 import (
 	"RainbowTable/common"
+	"bufio"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -118,8 +121,83 @@ func (job *MySqlInserterJob) insertFiles() {
 		_ = job.Con.Close()
 		job.WG.Done()
 	}()
+	_, err := job.Con.ExecContext(context.TODO(), "USE "+job.Config.Name)
+	if err != nil {
+		//TODO Something to do with this error?
+		fmt.Println(err)
+		return
+	}
+
+	file, err := os.Open(job.FilePath)
+	if err != nil {
+		return
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	var first, last string
+	separator := fmt.Sprintf("%c", job.Config.Separator[0])
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		//TODO BUlk insert?
+		first, last = job.getLine(scanner.Text(), separator)
+		if len(first) == 0 || len(last) == 0 || len(first) != len(last) {
+			continue
+		}
+		err = job.insertValues(first, last)
+		if err != nil {
+			//TODO Something to do with this error?
+			fmt.Println(err)
+		}
+	}
+
+	if err = scanner.Err(); err != nil {
+		//TODO Something to do with this error?
+		return
+	}
 
 	return
+}
+
+func (job *MySqlInserterJob) getLine(input string, separator string) (string, string) {
+	parts := strings.Split(input, separator)
+	if len(parts) != 2 {
+		return "", ""
+	}
+	return parts[0], parts[1]
+}
+
+func (job *MySqlInserterJob) insertValues(first, last string) error {
+	tableName := job.Config.MySqlConfig.GetTableName(len(first))
+	query := fmt.Sprintf("INSERT INTO %s (first, last) VALUES (?, ?)", tableName)
+
+	stmt, err := job.Con.PrepareContext(context.TODO(), query)
+	if err != nil {
+		return fmt.Errorf("error preparing insert query: %v", err)
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	_, err = stmt.Exec(first, last)
+	if err != nil {
+		if isDuplicateEntryError(err) {
+			return nil
+		}
+		return fmt.Errorf("error executing insert query: %v", err)
+	}
+
+	return nil
+}
+
+func isDuplicateEntryError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		// MySQL error code for duplicate entry violation is 1062
+		return mysqlErr.Number == 1062 || strings.Contains(mysqlErr.Message, "Duplicate entry")
+	}
+	return false
 }
 
 func (inserter *MySqlInserter) createStructure(client *sql.DB, config *common.RainbowConfig) error {
@@ -134,7 +212,7 @@ func (inserter *MySqlInserter) createStructure(client *sql.DB, config *common.Ra
 	}
 
 	for i := config.PasswordMin; i <= config.PasswordMax; i++ {
-		_, err = inserter.createTable(client, i)
+		_, err = inserter.createTable(client, config, i)
 		if err != nil {
 			return fmt.Errorf("error creating table with length %d: %v", i, err)
 		}
@@ -162,9 +240,8 @@ func (inserter *MySqlInserter) createDatabase(client *sql.DB, dbName string) err
 	return nil
 }
 
-func (inserter *MySqlInserter) createTable(client *sql.DB, colSize int) (string, error) {
-	tableName := fmt.Sprintf("table_%d", colSize)
-
+func (inserter *MySqlInserter) createTable(client *sql.DB, config *common.RainbowConfig, colSize int) (string, error) {
+	tableName := config.MySqlConfig.GetTableName(colSize)
 	rows, err := client.Query("SELECT table_name FROM information_schema.tables WHERE LOWER(table_name) = LOWER(?)", tableName)
 	if err != nil {
 		return "", err

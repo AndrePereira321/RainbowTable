@@ -21,6 +21,7 @@ type RainbowConfig struct {
 	PasswordMax    int          `json:"passwordMax"`
 	ChainLength    uint64       `json:"chainLength"`
 	TableSize      uint64       `json:"tableSize"`
+	Separator      string       `json:"separator"`
 	ReduceSeed     string       `json:"reduceSeed"`
 	WorkFolder     string       `json:"workFolder"`
 	CoreQt         int          `json:"-"`
@@ -51,6 +52,10 @@ func (config *MySqlConfig) Dsn() string {
 	return fmt.Sprintf("%s:%s@tcp(%s)/", config.User, config.Password, config.HostName)
 }
 
+func (config *MySqlConfig) GetTableName(colSize int) string {
+	return fmt.Sprintf("table_%d", colSize)
+}
+
 func ReadConfig(filePath string) (*RainbowConfig, error) {
 	buff, err := os.ReadFile(filePath)
 	if err != nil {
@@ -71,6 +76,9 @@ func ReadConfig(filePath string) (*RainbowConfig, error) {
 	}
 	if len(cfg.Method) == 0 {
 		cfg.Method = "mysql"
+	}
+	if len(cfg.Separator) == 0 {
+		cfg.Separator = " "
 	}
 
 	return &cfg, nil

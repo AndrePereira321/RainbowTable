@@ -63,6 +63,7 @@ func (job *GeneratorJob) GenerateTable() {
 	buffSize := job.Config.BuffSize
 
 	fileIndex := uint64(0)
+	separator := job.Config.Separator[0]
 
 	var first, last, hash []byte
 	var pwLen int
@@ -86,7 +87,7 @@ func (job *GeneratorJob) GenerateTable() {
 		}
 
 		buffer.Write(first)
-		buffer.WriteRune(' ')
+		buffer.WriteByte(separator)
 		buffer.Write(last)
 		buffer.WriteRune('\n')
 	}
