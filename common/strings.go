@@ -7,13 +7,20 @@ import (
 
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 const alphabetLen = len(alphabet)
+const moduloRange = 1 << 16
 
 func ReduceHash(hash []byte, i uint64, seed string, str []byte) {
-	data := append(append(hash, []byte(seed)...), intToBytes(i)...)
+	data := append(hash, []byte(seed)...)
+	iBytes := intToBytes(i)
 	length := len(str)
 	for j := 0; j < length; j++ {
 		for k := 0; k < len(data); k++ {
 			data[k] ^= byte(j)
+			for iB := range iBytes {
+				if iBytes[iB] > 0 {
+					data[k] ^= iBytes[iB]
+				}
+			}
 		}
 		str[j] = alphabet[customHash(data)%alphabetLen]
 	}
@@ -23,7 +30,7 @@ func ReduceHash(hash []byte, i uint64, seed string, str []byte) {
 func customHash(data []byte) int {
 	hash := 0
 	for _, b := range data {
-		hash = (hash*31 + int(b)) % (1 << 16)
+		hash = (hash*31 + int(b)) % moduloRange
 	}
 	return hash
 }
