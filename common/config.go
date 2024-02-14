@@ -40,6 +40,13 @@ func (config *RainbowConfig) GetGeneratorFolder() string {
 	return filepath.Join(config.WorkFolder, "generator")
 }
 
+func (config *RainbowConfig) GetJobQt() int {
+	if config.CoreMultiplier > 0 {
+		return int(float64(config.CoreQt) * config.CoreMultiplier)
+	}
+	return config.CoreQt
+}
+
 func (config *MySqlConfig) Dsn() string {
 	return fmt.Sprintf("%s:%s@tcp(%s)/", config.User, config.Password, config.HostName)
 }

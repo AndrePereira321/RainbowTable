@@ -30,11 +30,7 @@ func (gen *RainbowGenerator) GenerateTable() error {
 		return err
 	}
 
-	jobQt := gen.Config.CoreQt
-	if gen.Config.CoreMultiplier > 0 {
-		jobQt = int(float64(jobQt) * gen.Config.CoreMultiplier)
-	}
-
+	jobQt := gen.Config.GetJobQt()
 	rowsPerJob := gen.Config.TableSize / uint64(jobQt)
 
 	for i := 0; i < jobQt; i++ {
