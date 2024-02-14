@@ -1,10 +1,11 @@
 {
   "name": "Test",
   "hashAlgorithm": "SHA-256",
-  "passwordMin": 6,
-  "passwordMax": 10,
-  "chainLength": 10000,
-  "tableSize": 1000000,
+  "passwordMin": 8,
+  "passwordMax": 12,
+  "chainLength": 50000,
+  "tableSize": 10000000,
   "reduceSeed": "abc123",
-  "workFolder": "C:\\Users\\andre\\Desktop\\Apps\\RainbowTable\\test\\"
+  "workFolder": "C:\\Users\\andre\\Desktop\\Apps\\RainbowTable\\test\\",
+  "buffSize": 600
 }

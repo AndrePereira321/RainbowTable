@@ -2,10 +2,21 @@ package main
 
 import (
 	"RainbowTable/common"
-	"fmt"
+	"crypto/sha256"
+	"errors"
+	"strings"
 )
 
-func GetRainbowGenerator() (*RainbowGenerator, error) {
+func getEncoder(hashAlgorithm string) (Encoder, error) {
+	ltType := strings.ToLower(hashAlgorithm)
+	switch ltType {
+	case "sha-256":
+		return &Sha256Encoder{Hash: sha256.New()}, nil
+	}
+	return nil, errors.New("unsupported hash algorithm: " + hashAlgorithm)
+}
+
+func getRainbowGenerator() (*RainbowGenerator, error) {
 	filePath, err := common.GetConfigFilePath()
 	if err != nil {
 		return nil, err
@@ -21,11 +32,12 @@ func GetRainbowGenerator() (*RainbowGenerator, error) {
 }
 
 func main() {
-	generator, err := GetRainbowGenerator()
+	generator, err := getRainbowGenerator()
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(generator.Config.Name)
-	fmt.Println(generator.Config.HashAlgorithm)
+	err = generator.GenerateTable()
+	if err != nil {
+		panic(err)
+	}
 }
