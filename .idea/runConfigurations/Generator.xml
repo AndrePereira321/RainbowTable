@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Generator" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="RainbowTable" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="C:\Users\andre\Desktop\Apps\RainbowTable\config.json" />
+    <kind value="PACKAGE" />
+    <package value="RainbowTable/generator" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/generator/main.go" />
+    <method v="2" />
+  </configuration>
+</component>
