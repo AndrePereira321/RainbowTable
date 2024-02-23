@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 const defaultBuffSize = 10_000
@@ -23,6 +25,7 @@ type RainbowConfig struct {
 	TableSize      uint64       `json:"tableSize"`
 	Separator      string       `json:"separator"`
 	ReduceSeed     string       `json:"reduceSeed"`
+	SeedScore      uint64       `json:"-"`
 	WorkFolder     string       `json:"workFolder"`
 	CoreQt         int          `json:"-"`
 	CoreMultiplier float64      `json:"coreMultiplier"`
@@ -80,6 +83,20 @@ func ReadConfig(filePath string) (*RainbowConfig, error) {
 	if len(cfg.Separator) == 0 {
 		cfg.Separator = " "
 	}
+
+	seedScore := uint64(0)
+	for i := 0; i < len(cfg.ReduceSeed) && cfg.ReduceSeed[i] != 0; i++ {
+		seedScore += uint64(cfg.ReduceSeed[i])
+		if i > 0 {
+			seedScore ^= uint64(cfg.ReduceSeed[i])
+		}
+	}
+	if seedScore == 0 {
+		r := rand.New(rand.NewSource(time.Now().Unix()))
+		seedScore = r.Uint64()
+	}
+
+	cfg.SeedScore = seedScore
 
 	return &cfg, nil
 }

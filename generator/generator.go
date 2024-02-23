@@ -4,10 +4,12 @@ import (
 	"RainbowTable/common"
 	"bytes"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type RainbowGenerator struct {
@@ -20,6 +22,7 @@ type GeneratorJob struct {
 	WG             *sync.WaitGroup
 	RowsToGenerate uint64
 	Encoder        Encoder
+	Rand           *rand.Rand
 }
 
 func (gen *RainbowGenerator) GenerateTable() error {
@@ -45,10 +48,13 @@ func (gen *RainbowGenerator) GenerateTable() error {
 			RowsToGenerate: rowsPerJob,
 			ID:             i,
 			Encoder:        encoder,
+			Rand:           rand.New(rand.NewSource(time.Now().UnixNano() * int64(i+1))),
 		}
 
 		wg.Add(1)
 		go job.GenerateTable()
+
+		time.Sleep(7 * time.Millisecond)
 	}
 
 	wg.Wait()
@@ -75,14 +81,14 @@ func (job *GeneratorJob) GenerateTable() {
 			fileIndex++
 		}
 
-		first = common.GenerateRandomString(job.Config.PasswordMin, job.Config.PasswordMax)
+		first = common.GenerateRandomString(job.Rand, job.Config.PasswordMin, job.Config.PasswordMax)
 		pwLen = len(first)
 		last = make([]byte, pwLen)
 		copy(last, first)
 
 		hash = job.Encoder.Encode(last, nil)
 		for j := uint64(0); j < job.Config.ChainLength; j++ {
-			common.ReduceHash(hash, j, job.Config.ReduceSeed, last)
+			common.ReduceHash(hash, j, job.Config.SeedScore, last)
 			job.Encoder.Encode(last, hash)
 		}
 

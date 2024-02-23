@@ -2,49 +2,25 @@ package common
 
 import (
 	"math/rand"
-	"time"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 const alphabetLen = len(alphabet)
-const moduloRange = 1 << 16
 
-func ReduceHash(hash []byte, i uint64, seed string, str []byte) {
-	data := append(hash, []byte(seed)...)
-	iBytes := intToBytes(i)
-	length := len(str)
-	for j := 0; j < length; j++ {
-		for k := 0; k < len(data); k++ {
-			data[k] ^= byte(j)
-			for iB := range iBytes {
-				if iBytes[iB] > 0 {
-					data[k] ^= iBytes[iB]
-				}
-			}
-		}
-		str[j] = alphabet[customHash(data)%alphabetLen]
+func ReduceHash(hash []byte, chainIndex uint64, seedScore uint64, str []byte) {
+	score := chainIndex * seedScore
+	strLen := len(str)
+	hashLen := len(hash)
+	for i := 0; i < strLen; i++ {
+		index := ((((uint64(hash[(i+int(chainIndex))%hashLen]) << 8) |
+			(uint64(hash[(i+int(chainIndex)+1)%hashLen]))) +
+			(score + chainIndex + seedScore + uint64(i))) % 15485863) % uint64(alphabetLen)
+
+		str[i] = alphabet[index]
 	}
-
 }
 
-func customHash(data []byte) int {
-	hash := 0
-	for _, b := range data {
-		hash = (hash*31 + int(b)) % moduloRange
-	}
-	return hash
-}
-
-func intToBytes(i uint64) []byte {
-	b := make([]byte, 8)
-	for j := 0; j < 8; j++ {
-		b[j] = byte(i >> (56 - 8*j))
-	}
-	return b
-}
-
-func GenerateRandomString(min int, max int) []byte {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+func GenerateRandomString(r *rand.Rand, min int, max int) []byte {
 	length := r.Intn(max-min+1) + min
 
 	b := make([]byte, length)
